@@ -47,7 +47,7 @@ import { execFile, spawn } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -454,7 +454,7 @@ async function sweepEngine(e: Engine, pinned: string | null, live: boolean): Pro
     let ok = false;
     let note: string | undefined;
     try {
-      const mod = await import(path.join(ROOT, 'dist', 'src', e.session.file));
+      const mod = await import(pathToFileURL(path.join(ROOT, 'dist', 'src', e.session.file)).href);
       const Cls = mod[e.session.cls];
       const config = { name: `sweep-${e.id}`, cwd, permissionMode: 'bypassPermissions' };
       const session = e.passBin ? new Cls(config, e.bin) : new Cls(config);
@@ -798,13 +798,13 @@ async function sweepRegistry(codexBin: string, claudeBin: string): Promise<Regis
   // check cannot quietly stop matching when the registry's internals move.
   // `lookupModel` also resolves aliases, so the id equality below matters: it
   // keeps an alias from being compared against the entry it points at.
-  const { lookupModel, getAliases } = (await import(path.join(ROOT, 'src', 'models.ts'))) as {
+  const { lookupModel, getAliases } = (await import(pathToFileURL(path.join(ROOT, 'src', 'models.ts')).href)) as {
     lookupModel: (
       id: string,
     ) => { id: string; engine: string; pricing: { input: number; output: number; cached?: number } } | undefined;
     getAliases: () => Record<string, string>;
   };
-  const { AGY_XHIGH_MODELS } = (await import(path.join(ROOT, 'src', 'persistent-agy-session.ts'))) as {
+  const { AGY_XHIGH_MODELS } = (await import(pathToFileURL(path.join(ROOT, 'src', 'persistent-agy-session.ts')).href)) as {
     AGY_XHIGH_MODELS: RegExp;
   };
   const registered = (id: string) => {
