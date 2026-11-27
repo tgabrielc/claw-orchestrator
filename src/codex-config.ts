@@ -20,10 +20,10 @@ const KEY_RE = /^[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*$/;
 const FEATURE_RE = /^[A-Za-z0-9_-]+$/;
 
 /** The overrides as `[key, value]`, each value as TOML (a string quoted, a number or boolean bare). */
-export function codexConfigEntries(config: unknown): Array<[string, string, string | number | boolean]> {
+export function codexConfigEntries(config: unknown): Array<[string, string, string | number | boolean | string[]]> {
   if (config === undefined) return [];
   if (!config || typeof config !== 'object' || Array.isArray(config)) {
-    throw new Error('codexConfig must be an object of key → string | number | boolean');
+    throw new Error('codexConfig must be an object of key → string | number | boolean | string[]');
   }
   return Object.entries(config as Record<string, unknown>).map(([key, value]) => {
     if (!KEY_RE.test(key)) throw new Error(`codexConfig key ${JSON.stringify(key)} is not a dotted config key`);
@@ -33,7 +33,9 @@ export function codexConfigEntries(config: unknown): Array<[string, string, stri
     if (typeof value === 'string') return [key, JSON.stringify(value), value];
     if (typeof value === 'boolean') return [key, String(value), value];
     if (typeof value === 'number' && Number.isFinite(value)) return [key, String(value), value];
-    throw new Error(`codexConfig ${key} must be a string, a finite number or a boolean`);
+    // A JSON array of JSON strings is also a TOML array of basic strings (e.g. mcp_servers.<name>.args).
+    if (Array.isArray(value) && value.every((v) => typeof v === 'string')) return [key, JSON.stringify(value), value];
+    throw new Error(`codexConfig ${key} must be a string, a finite number, a boolean or an array of strings`);
   });
 }
 
@@ -43,7 +45,7 @@ export function codexConfigArgs(config: unknown): string[] {
 }
 
 /** The overrides as a JSON object for the app-server's thread `config`. */
-export function codexConfigObject(config: unknown): Record<string, string | number | boolean> {
+export function codexConfigObject(config: unknown): Record<string, string | number | boolean | string[]> {
   return Object.fromEntries(codexConfigEntries(config).map(([key, , value]) => [key, value]));
 }
 

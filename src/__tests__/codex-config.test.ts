@@ -12,13 +12,15 @@ describe('codexConfig', () => {
     ]);
     expect(codexConfigObject({ model_verbosity: 'low', n: 2 })).toEqual({ model_verbosity: 'low', n: 2 });
     expect(codexConfigArgs(undefined)).toEqual([]);
+    expect(codexConfigArgs({ 'mcp_servers.v.args': ['-m', 'C:\\x y'] })).toEqual(['-c', 'mcp_servers.v.args=["-m","C:\\\\x y"]']);
   });
 
   it('refuses the keys the wrapper sets, keys that are not config keys, and other values', () => {
     expect(() => codexConfigArgs({ sandbox_mode: 'danger-full-access' })).toThrow(/wrapper sets it/);
     expect(() => codexConfigArgs({ approval_policy: 'never' })).toThrow(/wrapper sets it/);
     expect(() => codexConfigArgs({ 'a=b': 'x' })).toThrow(/not a dotted config key/);
-    expect(() => codexConfigArgs({ k: { nested: 1 } })).toThrow(/string, a finite number or a boolean/);
+    expect(() => codexConfigArgs({ k: { nested: 1 } })).toThrow(/string, a finite number, a boolean or an array of strings/);
+    expect(() => codexConfigArgs({ k: ['a', 1] })).toThrow(/array of strings/);
     expect(() => codexConfigArgs(['k'])).toThrow(/must be an object/);
   });
 

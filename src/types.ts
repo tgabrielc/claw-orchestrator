@@ -552,7 +552,7 @@ export interface SessionConfig {
    * `approval_policy`, `approvals_reviewer`, `model_reasoning_effort`. Like
    * `launcher`, an override such as `notify` or `mcp_servers` can run commands.
    */
-  codexConfig?: Record<string, string | number | boolean>;
+  codexConfig?: Record<string, string | number | boolean | string[]>;
   /** Codex: features to turn on or off for the session (`--enable` / `--disable`). */
   codexFeatures?: { enable?: string[]; disable?: string[] };
   /** `codex` only: do not load the execpolicy `.rules` files (`--ignore-rules`); the app-server has no such flag, so `codex-app` refuses it. */

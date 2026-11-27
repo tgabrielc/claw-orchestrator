@@ -237,9 +237,9 @@ export const SESSION_START_PROPERTIES: Record<string, Record<string, unknown>> =
   },
   codexConfig: {
     type: 'object',
-    additionalProperties: { type: ['string', 'number', 'boolean'] },
+    additionalProperties: { anyOf: [{ type: ['string', 'number', 'boolean'] }, { type: 'array', items: { type: 'string' } }] },
     description:
-      'codex and codex-app: config overrides, each as `-c key=value` (TOML values; strings are quoted). sandbox_mode, approval_policy, approvals_reviewer and model_reasoning_effort are refused (the wrapper sets them). Overrides such as notify or mcp_servers can run commands.',
+      'codex and codex-app: config overrides, each as `-c key=value` (TOML values; strings are quoted, string arrays become TOML arrays). sandbox_mode, approval_policy, approvals_reviewer and model_reasoning_effort are refused (the wrapper sets them). Overrides such as notify or mcp_servers can run commands.',
   },
   codexFeatures: {
     type: 'object',
