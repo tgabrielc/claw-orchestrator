@@ -568,6 +568,14 @@ export class PersistentAgySession extends BaseOneShotSession {
           if (key ? !toolSteps.has(key) : step.state !== 'ACTIVE') {
             if (key) toolSteps.add(key);
             this._stats.toolCalls++;
+            const info = step.tool_info as { name?: unknown; parameters?: unknown } | undefined;
+            if (info && typeof info.name === 'string') {
+              try {
+                options.callbacks?.onToolUse?.({ tool: { name: info.name, input: info.parameters } });
+              } catch {
+                /* user callback */
+              }
+            }
           }
         }
         if (evt.event === 'result' && evt.result) {
