@@ -320,6 +320,40 @@ describe('PersistentCodexSession', () => {
 
   // `noSessionPersistence` used to reach only Claude Code. Codex's counterpart
   // is `--ephemeral`, which both `exec` and `exec resume` accept.
+  it("permissionMode 'auto' runs Approve for me: the reviewer on the first turn, its keys on resume, never when read-only", async () => {
+    const session = new PersistentCodexSession({ name: 'test', cwd: '/tmp', permissionMode: 'auto' });
+    await session.start();
+    const p1 = session.send('first', { waitForComplete: true });
+    setTimeout(() => runTurn(mockProc, 'thread-review'), 10);
+    await p1;
+    const proc2 = createMockProcess();
+    mockSpawn.mockReturnValue(proc2);
+    const p2 = session.send('second', { waitForComplete: true });
+    setTimeout(() => runTurn(proc2, 'thread-review'), 10);
+    await p2;
+    const [a1, a2] = [0, 1].map((i) => mockSpawn.mock.calls[i][1] as string[]);
+    expect(a1).toContain('--approve-for-me');
+    expect(a1).not.toContain('--sandbox');
+    expect(a2).toContain('sandbox_mode="workspace-write"');
+    expect(a2).toContain('approvals_reviewer="auto_review"');
+    expect(a2).toContain('approval_policy="on-request"');
+    session.stop();
+
+    for (const [opts, thread] of [[{ permissionMode: 'auto', sandboxMode: 'read-only' }, 't-ro'], [{}, 't-plain']] as const) {
+      const proc = createMockProcess();
+      mockSpawn.mockReturnValue(proc);
+      const s = new PersistentCodexSession({ name: 'test', cwd: '/tmp', ...opts });
+      await s.start();
+      const p = s.send('hi', { waitForComplete: true });
+      setTimeout(() => runTurn(proc, thread), 10);
+      await p;
+      const a = mockSpawn.mock.calls.at(-1)![1] as string[];
+      expect(a).not.toContain('--approve-for-me');
+      expect(a).toContain('--sandbox');
+      s.stop();
+    }
+  });
+
   it('honours noSessionPersistence with --ephemeral', async () => {
     const session = new PersistentCodexSession({ name: 'test', cwd: '/tmp', noSessionPersistence: true });
     await session.start();
