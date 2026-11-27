@@ -366,6 +366,12 @@ export class PersistentCodexSession extends BaseOneShotSession {
     const isResume = !!this.codexThreadId;
     const isFork = !isResume && !!this._forkSourceId;
     const sandbox = this.options.sandboxMode || 'workspace-write';
+    // permissionMode 'auto' = the Codex app's "Approve for me": the workspace-write
+    // sandbox, with an automatic reviewer deciding each request to leave it
+    // (approval: on-request) instead of every such request being refused
+    // (approval: never, what plain `--sandbox workspace-write` gets in exec).
+    // Measured on 0.172 from the run header. A read-only session stays read-only.
+    const review = this.options.permissionMode === 'auto' && sandbox === 'workspace-write';
     if (isResume || isFork) {
       // `codex exec resume` rejects --sandbox and -C (still true as of 0.146.0:
       // passing --sandbox errors with "unexpected argument"), so the policy has
@@ -381,8 +387,12 @@ export class PersistentCodexSession extends BaseOneShotSession {
       else args.push('fork', this._forkSourceId!);
       args.push('--skip-git-repo-check', '--json');
       args.push('-c', `sandbox_mode="${sandbox}"`);
+      // resume rejects --approve-for-me (0.172); these are the keys it sets, the
+      // reviewer value read from the codex binary (user | auto_review | guardian_subagent)
+      if (review) args.push('-c', 'approval_policy="on-request"', '-c', 'approvals_reviewer="auto_review"');
     } else {
-      args.push('--sandbox', sandbox, '--skip-git-repo-check', '--json');
+      // codex 0.172 refuses --approve-for-me beside --sandbox; it implies workspace-write
+      args.push(...(review ? ['--approve-for-me'] : ['--sandbox', sandbox]), '--skip-git-repo-check', '--json');
       if (this.options.cwd) args.push('-C', this.options.cwd);
     }
     // Structured output: Codex 0.132+ accepts `--output-schema <FILE>` on both
